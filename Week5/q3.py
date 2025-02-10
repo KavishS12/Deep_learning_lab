@@ -53,19 +53,36 @@ model = CNNClassifier()
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
+print("Model's state dict: ")
+for param_tensor in model.state_dict().keys():
+    print(param_tensor,"\t", model.state_dict()[param_tensor].size())
+print()
+
+print("Optimizer's state dict: ")
+for var_name in optimizer.state_dict():
+    print(var_name,"\t", optimizer.state_dict()[var_name])
+print()
+
 num_epochs = 5
 for epoch in range(num_epochs):
     model.train()
     running_loss = 0.0
+    total = 0
+    correct = 0
     for images, labels in train_loader:
         optimizer.zero_grad()
         outputs = model(images)
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
+
+        _, predicted = torch.max(outputs, 1)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
         running_loss += loss.item()
 
-    print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {running_loss / len(train_loader)}')
+    epoch_accuracy = (correct / total) * 100
+    print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {running_loss / len(train_loader)}, Accuracy: {epoch_accuracy:.2f}%')
 
 model.eval()
 all_preds = []
@@ -98,11 +115,29 @@ plt.ylabel('True')
 plt.title('Confusion Matrix')
 plt.show()
 
+torch.save(model,"./ModelFiles/mnist_model.pt")
+
 # Output :
-    # Epoch [1/5], Loss: 0.3153394287040768
-    # Epoch [2/5], Loss: 0.09279175668217553
-    # Epoch [3/5], Loss: 0.06799774197250372
-    # Epoch [4/5], Loss: 0.052092426602515236
-    # Epoch [5/5], Loss: 0.0430296938434185
-    # Accuracy: 98.2000%
-    # Number of learnable parameters: 149798
+#     Model's state dict:
+#     net.0.weight 	 torch.Size([64, 1, 3, 3])
+#     net.0.bias 	 torch.Size([64])
+#     net.3.weight 	 torch.Size([128, 64, 3, 3])
+#     net.3.bias 	 torch.Size([128])
+#     net.6.weight 	 torch.Size([64, 128, 3, 3])
+#     net.6.bias 	 torch.Size([64])
+#     classification_head.0.weight 	 torch.Size([20, 64])
+#     classification_head.0.bias 	 torch.Size([20])
+#     classification_head.2.weight 	 torch.Size([10, 20])
+#     classification_head.2.bias 	 torch.Size([10])
+#
+#     Optimizer's state dict:
+#     state 	 {}
+#     param_groups 	 [{'lr': 0.001, 'betas': (0.9, 0.999), 'eps': 1e-08, 'weight_decay': 0, 'amsgrad': False, 'maximize': False, 'foreach': None, 'capturable': False, 'differentiable': False, 'fused': None, 'params': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]}]
+#
+#     Epoch [1/5], Loss: 0.26823175470422334, Accuracy: 91.55%
+#     Epoch [2/5], Loss: 0.084577521016278, Accuracy: 97.42%
+#     Epoch [3/5], Loss: 0.061520795834221646, Accuracy: 98.11%
+#     Epoch [4/5], Loss: 0.048769522910006344, Accuracy: 98.47%
+#     Epoch [5/5], Loss: 0.03942956825097402, Accuracy: 98.76%
+#     Accuracy: 98.1400%
+#     Number of learnable parameters: 149798
